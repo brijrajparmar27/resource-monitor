@@ -1,0 +1,21 @@
+* {
+  margin: 0px;
+  padding: 0px;
+}
+body {
+  font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande",
+    "Lucida Sans", Arial, sans-serif;
+  color: gainsboro;
+}
+p {
+  font-size: 20px;
+}
+h1 {
+  font-size: 38px;
+}
+h2 {
+  font-size: 32px;
+}
+h3 {
+  font-size: 28px;
+}
