@@ -37,8 +37,6 @@ export function Chart(props: ChartProps) {
     ];
   }, [props.data, props.maxDataPoints]);
 
-  console.log(preparedData);
-
   return (
     <BaseChart data={preparedData} fill={color.fill} stroke={color.stroke} />
   );

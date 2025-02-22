@@ -14,12 +14,17 @@ export function pollResources() {
     const cpuUsage = await getCpuUsage();
     const ramUsage = getRamUsage();
     const storageData = getStorageData();
-    const win = BrowserWindow.getAllWindows()[0];
-    win.webContents.send("poll", {
-      cpuUsage,
-      ramUsage,
-      storageUsage: storageData.usage,
-    });
+    const win = BrowserWindow?.getAllWindows()?.[0];
+    if (win) {
+      win.webContents.send("poll", {
+        cpuUsage,
+        ramUsage,
+        storageUsage: storageData.usage,
+      });
+    } else {
+      stopPolling();
+      stopPollinglogs();
+    }
   }, POLLING_INTERVAL);
 }
 
@@ -28,49 +33,55 @@ export function getProcesses() {
     process.platform === "win32"
       ? "tasklist /FO CSV /NH"
       : "ps -eo pid,comm,%mem,%cpu";
-  const win = BrowserWindow.getAllWindows()[0];
+  const win = BrowserWindow?.getAllWindows()?.[0];
+
   logsInterval = setInterval(() => {
-    exec(command, (error, stdout, stderr) => {
-      if (error || stderr) {
-        console.error("Error fetching processes:", error || stderr);
-        return;
-      }
+    if (win) {
+      exec(command, (error, stdout, stderr) => {
+        if (error || stderr) {
+          console.error("Error fetching processes:", error || stderr);
+          return;
+        }
 
-      const processes: {
-        name: string;
-        pid: string;
-        mem: string;
-        cpu?: string;
-      }[] = [];
+        const processes: {
+          name: string;
+          pid: string;
+          mem: string;
+          cpu?: string;
+        }[] = [];
 
-      if (process.platform === "win32") {
-        stdout.split("\n").forEach((line) => {
-          const parts = line
-            .split('","')
-            .map((p) => p.replace(/"/g, "").trim());
-          if (parts.length >= 2) {
-            processes.push({ name: parts[0], pid: parts[1], mem: parts[4] });
-          }
-        });
-      } else {
-        stdout
-          .split("\n")
-          .slice(1)
-          .forEach((line) => {
-            const parts = line.trim().split(/\s+/);
-            if (parts.length >= 4) {
-              processes.push({
-                pid: parts[0],
-                name: parts[1],
-                mem: parts[2] + "%",
-                cpu: parts[3] + "%",
-              });
+        if (process.platform === "win32") {
+          stdout.split("\n").forEach((line) => {
+            const parts = line
+              .split('","')
+              .map((p) => p.replace(/"/g, "").trim());
+            if (parts.length >= 2) {
+              processes.push({ name: parts[0], pid: parts[1], mem: parts[4] });
             }
           });
-      }
+        } else {
+          stdout
+            .split("\n")
+            .slice(1)
+            .forEach((line) => {
+              const parts = line.trim().split(/\s+/);
+              if (parts.length >= 4) {
+                processes.push({
+                  pid: parts[0],
+                  name: parts[1],
+                  mem: parts[2] + "%",
+                  cpu: parts[3] + "%",
+                });
+              }
+            });
+        }
 
-      win.webContents.send("polledlogs", { data: processes });
-    });
+        win.webContents.send("polledlogs", { data: processes });
+      });
+    } else {
+      stopPolling();
+      stopPollinglogs();
+    }
   }, POLLING_INTERVAL);
 }
 
@@ -122,7 +133,3 @@ function getStorageData() {
     usage: 1 - free / total,
   };
 }
-
-export const handleABC = () => {
-  console.log("abc");
-};

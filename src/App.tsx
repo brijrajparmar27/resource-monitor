@@ -1,15 +1,20 @@
+import { Box, Card, Grid2, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import "./App.css";
+import amd from "./assets/amd.svg";
+import intel from "./assets/intel.svg";
 import m1 from "./assets/m1.svg";
+import m2 from "./assets/m2.svg";
+import m3 from "./assets/m3.svg";
+import m4 from "./assets/m4.svg";
 import {
   logs,
   polledData,
   polledGraphData,
   staticData,
 } from "./interfaces/types";
-import { Chart } from "./charts/Chart";
-
-function App() {
+import { StatsCard } from "./statsCard";
+const App = () => {
   const [staticData, setStaticData] = useState<staticData | null>(null);
   const [logData, setLogsData] = useState<logs[] | null>(null);
   const [polledData, setpolledData] = useState<polledGraphData>({
@@ -49,6 +54,24 @@ function App() {
     return result;
   }
 
+  const getCPUsvg = (name: string) => {
+    if (name.toLowerCase().includes("apple")) {
+      if (name.toLowerCase().includes("m2")) {
+        return m2;
+      } else if (name.toLowerCase().includes("m3")) {
+        return m3;
+      } else if (name.toLowerCase().includes("m4")) {
+        return m4;
+      } else {
+        return m1;
+      }
+    } else if (name.toLowerCase().includes("intel")) {
+      return intel;
+    } else {
+      return amd;
+    }
+  };
+
   useEffect(() => {
     window.ipcRenderer.invoke("StaticData").then((data) => setStaticData(data));
     window.ipcRenderer.send("pollData");
@@ -66,69 +89,108 @@ function App() {
   }, []);
 
   return (
-    <div className="root">
-      <div className="main">
-        <div className="topRow">
-          <div className="processor-contain">
-            <img src={m1} height={200} width={"auto"} />
-            <p className="CPU-name">{staticData?.cpuModel}</p>
-          </div>
-          <div className="loggs-contain">
-            <div className="logs-card">
+    <Box
+      height={"100vh"}
+      width={"100vw"}
+      sx={{ backgroundColor: "#222831", padding: "10px" }}
+      display={"flex"}
+    >
+      <Grid2 container height={"100%"} width={"100%"}>
+        <Grid2 size={4} display={"flex"}>
+          <Card
+            sx={{
+              width: "100%",
+              margin: "5px",
+              backgroundColor: "transparent",
+            }}
+            elevation={0}
+          >
+            <Box
+              sx={{ height: "100%" }}
+              display={"flex"}
+              flexDirection={"column"}
+              justifyContent={"center"}
+              alignItems={"center"}
+            >
+              {staticData?.cpuModel && (
+                <img
+                  src={getCPUsvg(staticData!.cpuModel)}
+                  alt=""
+                  height={"200px"}
+                  width={"auto"}
+                />
+              )}
+              <Typography variant="h5" className="CPU-name" color="gainsboro">
+                {staticData?.cpuModel}
+              </Typography>
+            </Box>
+          </Card>
+        </Grid2>
+        <Grid2 size={8} display={"flex"}>
+          <Card
+            sx={{
+              width: "100%",
+              margin: "5px",
+              overflowY: "auto",
+              backgroundColor: "#000",
+              color: "#0f0",
+              fontFamily: "monospace",
+              padding: 2,
+            }}
+          >
+            <Typography variant="h6" sx={{ color: "#fff" }}>
+              System Logs
+            </Typography>
+            <Box height={"200px"}>
               {logData?.map((each) => {
                 return (
-                  <div className="log-line">
-                    <p>pid: {each.pid}</p>
-                    <p>name - {each.name}</p>
-                    <p>Memory usage - {each.mem}</p>
-                    <p>CPU utilization - {each.cpu}</p>
-                  </div>
+                  <Box display={"flex"}>
+                    <Typography fontSize={"10px"}>pid: {each.pid}</Typography>
+                    <Typography fontSize={"10px"}>
+                      name - {each.name}
+                    </Typography>
+                    <Typography fontSize={"10px"}>
+                      Memory usage - {each.mem}
+                    </Typography>
+                    <Typography fontSize={"10px"}>
+                      CPU utilization - {each.cpu}
+                    </Typography>
+                  </Box>
                 );
               })}
-            </div>
-          </div>
-        </div>
-        <div className="bottomRow">
-          <div className="util-bar"></div>
-          <div className="stats-wrapper">
-            <div className="cpu-contain card">
-              <Chart
-                data={polledData!.cpuUsage}
-                maxDataPoints={1}
-                selectedView={"CPU"}
-              />
-              <div className="info-row">
-                <p>CPU Stats</p>
-                <p>{staticData?.cpuModel}</p>
-              </div>
-            </div>
-            <div className="ram-contain card">
-              <Chart
-                data={polledData!.ramUsage}
-                maxDataPoints={1}
-                selectedView={"RAM"}
-              />
-              <div className="info-row">
-                <p>RAM Stats</p>
-                <p>{staticData?.totalMemoryGB}GB</p>
-              </div>
-            </div>
-            <div className="storage-contain card">
-              <Chart
-                data={polledData!.storageUsage}
-                maxDataPoints={1}
-                selectedView={"STORAGE"}
-              />
-              <div className="info-row">
-                <p>Storage Stats</p>
-                <p>{staticData?.totalStorage}GB</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Box>
+          </Card>
+        </Grid2>
+
+        <Grid2 size={4} display={"flex"}>
+          <StatsCard
+            view={"STORAGE"}
+            viewData={polledData!.storageUsage}
+            viewLabel={"Storage Stats"}
+            viewVal={`${staticData?.totalStorage}GB`}
+          />
+        </Grid2>
+
+        <Grid2 size={4} display={"flex"}>
+          <StatsCard
+            view={"CPU"}
+            viewData={polledData!.cpuUsage}
+            viewLabel={"CPU Stats"}
+            viewVal={staticData?.cpuModel}
+          />
+        </Grid2>
+
+        <Grid2 size={4} display={"flex"}>
+          <StatsCard
+            view={"RAM"}
+            viewData={polledData!.ramUsage}
+            viewLabel={"RAM Stats"}
+            viewVal={`${staticData?.totalMemoryGB}GB`}
+          />
+        </Grid2>
+      </Grid2>
+    </Box>
   );
-}
+};
 
 export default App;
